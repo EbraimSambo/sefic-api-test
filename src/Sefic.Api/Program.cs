@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Sefic.Api.Infrastructure;
+using Sefic.Api.Errors;
 using Sefic.Application.Partners;
 using Sefic.Infrastructure;
 using Sefic.Infrastructure.Persistence;

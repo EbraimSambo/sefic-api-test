@@ -6,13 +6,15 @@ API ASP.NET Core para gerir clientes e fornecedores (NIF único, concorrência o
 - .NET SDK 10.0 (`net10.0`), ASP.NET Core 10, EF Core 10.0.12 (SQL Server)
 - SQL Server 2022 (contentor Docker), xUnit 2.9.3
 
-## Arquitetura (Clean Architecture)
-| Projeto | Responsabilidade |
+## Arquitetura (Clean Architecture, num único projeto)
+Um só projeto (`src/Sefic.Api`) com a separação por pastas/namespaces e dependências apenas para dentro
+(`Api → Application → Domain`; `Infrastructure → Application/Domain`):
+| Pasta | Responsabilidade |
 |---|---|
-| `src/Sefic.Domain` | Entidade `Partner`, `PartnerType`, regras do NIF (sem dependências) |
-| `src/Sefic.Application` | Casos de uso (`PartnerService`), validação, DTOs, porta `IPartnerRepository` |
-| `src/Sefic.Infrastructure` | EF Core, mapeamento, migrações, repositório, seed |
-| `src/Sefic.Api` | Controller, tratamento uniforme de erros (ProblemDetails) |
+| `Domain/` | Entidade `Partner`, `PartnerType`, regras do NIF (sem dependências de framework) |
+| `Application/` | Casos de uso (`PartnerService`), validação, DTOs, porta `IPartnerRepository` |
+| `Infrastructure/` | EF Core, mapeamento, migrações, repositório, seed |
+| `Api/` | Controller e tratamento uniforme de erros (ProblemDetails) |
 | `tests/Sefic.Tests` | Testes unitários e de integração contra SQL Server real |
 
 Decisões-chave: unicidade do NIF por índice único (concorrência resolvida pela BD, erros 2601/2627 → 409);
@@ -29,7 +31,7 @@ paginação executados em SQL; `Name` com colação `Latin1_General_100_CI_AS` (
 3. Aplicar migrações:
    ```bash
    dotnet tool install --global dotnet-ef   # se necessário
-   dotnet ef database update -p src/Sefic.Infrastructure
+   dotnet ef database update -p src/Sefic.Api
    ```
 
 ## Execução

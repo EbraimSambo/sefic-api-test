@@ -1,10 +1,6 @@
 # syntax=docker/dockerfile:1
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY Sefic.sln ./
-COPY src/Sefic.Domain/*.csproj src/Sefic.Domain/
-COPY src/Sefic.Application/*.csproj src/Sefic.Application/
-COPY src/Sefic.Infrastructure/*.csproj src/Sefic.Infrastructure/
 COPY src/Sefic.Api/*.csproj src/Sefic.Api/
 RUN dotnet restore src/Sefic.Api/Sefic.Api.csproj
 COPY src/ src/

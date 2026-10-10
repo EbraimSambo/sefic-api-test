@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Sefic.Application.Common;
 
-namespace Sefic.Api.Infrastructure;
+namespace Sefic.Api.Errors;
 
 /// <summary>Formato único de erro (ProblemDetails) sem stack traces.</summary>
 public static class ApiErrors
