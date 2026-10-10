@@ -7,14 +7,14 @@ API ASP.NET Core para gerir clientes e fornecedores (NIF único, concorrência o
 - SQL Server 2022 (contentor Docker), xUnit 2.9.3
 
 ## Arquitetura (Clean Architecture, num único projeto)
-Um só projeto (`src/Sefic.Api`) com a separação por pastas/namespaces e dependências apenas para dentro
+Um só projeto (`Sefic.Api.csproj` na raiz, código em `src/`) com a separação por pastas/namespaces e dependências apenas para dentro
 (`Api → Application → Domain`; `Infrastructure → Application/Domain`):
 | Pasta | Responsabilidade |
 |---|---|
-| `Domain/` | Entidade `Partner`, `PartnerType`, regras do NIF (sem dependências de framework) |
-| `Application/` | Casos de uso (`PartnerService`), validação, DTOs, porta `IPartnerRepository` |
-| `Infrastructure/` | EF Core, mapeamento, migrações, repositório, seed |
-| `Api/` | Controller e tratamento uniforme de erros (ProblemDetails) |
+| `src/Domain/` | Entidade `Partner`, `PartnerType`, regras do NIF (sem dependências de framework) |
+| `src/Application/` | Casos de uso (`PartnerService`), validação, DTOs, porta `IPartnerRepository` |
+| `src/Infrastructure/` | EF Core, mapeamento, migrações, repositório, seed |
+| `src/Api/` | Controller e tratamento uniforme de erros (ProblemDetails) |
 | `tests/Sefic.Tests` | Testes unitários e de integração contra SQL Server real |
 
 Decisões-chave: unicidade do NIF por índice único (concorrência resolvida pela BD, erros 2601/2627 → 409);
@@ -27,16 +27,16 @@ paginação executados em SQL; `Name` com colação `Latin1_General_100_CI_AS` (
    docker run -d --name sefic-sqlserver -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD='Your_password123' \
      -p 14333:1433 mcr.microsoft.com/mssql/server:2022-latest
    ```
-2. Connection string em `src/Sefic.Api/appsettings.json` (`ConnectionStrings:Default`, por defeito `localhost,14333`, sa/`Your_password123`).
+2. Connection string em `appsettings.json` (`ConnectionStrings:Default`, por defeito `localhost,14333`, sa/`Your_password123`).
 3. Aplicar migrações:
    ```bash
    dotnet tool install --global dotnet-ef   # se necessário
-   dotnet ef database update -p src/Sefic.Api
+   dotnet ef database update
    ```
 
 ## Execução
 ```bash
-dotnet run --project src/Sefic.Api      # http://localhost:5290
+dotnet run      # http://localhost:5290
 ```
 Em `Development` a API aplica as migrações e insere dados de exemplo (cadastro vazio) via `Seed:Enabled`.
 Exemplos de pedidos em `sefic-api.http`.
@@ -63,7 +63,7 @@ docker compose down              # para (acrescente -v para apagar os dados)
 
 ## Testes
 ```bash
-dotnet test
+dotnet test tests/Sefic.Tests
 ```
 Cada classe de testes cria uma base `SeficTests_<guid>` própria e apaga-a no fim. Para outro servidor:
 `SEFIC_TEST_CONNECTION="Server=...;User Id=...;Password=...;TrustServerCertificate=True"` (sem `Database`).

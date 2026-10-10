@@ -15,6 +15,6 @@
     <Using Include="Xunit" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Sefic.Api\Sefic.Api.csproj" />
+    <ProjectReference Include="..\..\Sefic.Api.csproj" />
   </ItemGroup>
 </Project>

@@ -1,10 +1,12 @@
 # syntax=docker/dockerfile:1
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY src/Sefic.Api/*.csproj src/Sefic.Api/
-RUN dotnet restore src/Sefic.Api/Sefic.Api.csproj
+COPY Sefic.Api.csproj ./
+RUN dotnet restore
 COPY src/ src/
-RUN dotnet publish src/Sefic.Api/Sefic.Api.csproj -c Release -o /app --no-restore
+COPY Properties/ Properties/
+COPY appsettings*.json ./
+RUN dotnet publish Sefic.Api.csproj -c Release -o /app --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
