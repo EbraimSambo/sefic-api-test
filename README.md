@@ -1,6 +1,6 @@
 # Sefic API — clientes e fornecedores
 
-API ASP.NET Core para gerir clientes e fornecedores (NIF único, concorrência otimista).
+API ASP.NET Core para gerir clientes e fornecedores
 
 ## Versões
 - .NET SDK 10.0 (`net10.0`), ASP.NET Core 10, EF Core 10.0.12 (SQL Server)
