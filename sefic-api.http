@@ -1,0 +1,31 @@
+@host = http://localhost:5290
+
+### Criar (Name é aparado; NIF normalizado para 001234567)
+POST {{host}}/api/partners
+Content-Type: application/json
+
+{ "name": " Ana Silva ", "taxNumber": "001.234.567", "type": "CUSTOMER", "email": "ana@example.com", "creditLimit": 5000.50 }
+
+### Obter por Id (substituir)
+GET {{host}}/api/partners/00000000-0000-0000-0000-000000000000
+
+### Listar com filtros combinados
+GET {{host}}/api/partners?search=ana&type=CUSTOMER&includeInactive=false&page=1&pageSize=20
+
+### Pesquisa por NIF (separadores ignorados)
+GET {{host}}/api/partners?search=001.234
+
+### Atualizar / desativar (Version obrigatória, vinda da resposta anterior)
+PUT {{host}}/api/partners/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+
+{ "name": "Ana Silva", "taxNumber": "001234567", "type": "BOTH", "email": null, "creditLimit": 6000, "isActive": false, "version": "AAAAAAAAB9E=" }
+
+### Erro 400: CreditLimit com três casas decimais
+POST {{host}}/api/partners
+Content-Type: application/json
+
+{ "name": "Teste", "taxNumber": "123456789", "type": "CUSTOMER", "creditLimit": 10.999 }
+
+### Erro 400: Page inválida
+GET {{host}}/api/partners?page=0
