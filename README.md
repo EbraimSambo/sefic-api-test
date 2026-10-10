@@ -39,6 +39,26 @@ dotnet run --project src/Sefic.Api      # http://localhost:5290
 Em `Development` a API aplica as migrações e insere dados de exemplo (cadastro vazio) via `Seed:Enabled`.
 Exemplos de pedidos em `sefic-api.http`.
 
+## Docker
+`Dockerfile` (multi-stage: SDK 10.0 para build, runtime `aspnet:10.0`, utilizador não-root) e
+`docker-compose.yml` (API + SQL Server 2022 com volume persistente e healthcheck).
+
+```bash
+docker compose up -d --build     # sobe a BD, espera pelo healthcheck e arranca a API
+curl "http://localhost:8080/api/partners"
+docker compose logs -f api       # logs
+docker compose down              # para (acrescente -v para apagar os dados)
+```
+- A API fica em `http://localhost:8080` e a BD em `localhost:14334` (evita colidir com um SQL Server local em 14333).
+- No arranque a API aplica as migrações e insere os dados de exemplo (`Seed__Enabled=true`), pelo que não
+  é preciso `dotnet ef database update`.
+- Variáveis opcionais (ficheiro `.env` ou ambiente): `SA_PASSWORD` (por defeito `Your_password123`; tem de cumprir
+  a política de passwords do SQL Server), `API_PORT` (8080), `SQL_PORT` (14334).
+- Só a imagem da API: `docker build -t sefic-api .` e
+  `docker run -p 8080:8080 -e ConnectionStrings__Default="<connection string>" sefic-api`.
+- Os testes (`dotnet test`) correm no anfitrião contra qualquer SQL Server acessível, incluindo o do compose:
+  `SEFIC_TEST_CONNECTION="Server=localhost,14334;User Id=sa;Password=Your_password123;TrustServerCertificate=True"`.
+
 ## Testes
 ```bash
 dotnet test
