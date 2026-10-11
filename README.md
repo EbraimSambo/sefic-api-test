@@ -9,15 +9,16 @@ contra SQL Server real.
 
 ## Índice
 1. [Versões](#versões)
-2. [Início rápido (Docker)](#início-rápido-docker)
-3. [Execução local](#execução-local)
-4. [Testes](#testes)
-5. [Guia da API com exemplos](#guia-da-api-com-exemplos)
-6. [Regras de validação](#regras-de-validação)
-7. [Formato dos erros](#formato-dos-erros)
-8. [Arquitetura e decisões](#arquitetura-e-decisões)
-9. [Estrutura do repositório](#estrutura-do-repositório)
-10. [Resolução de problemas](#resolução-de-problemas)
+2. [Como executar](#como-executar)
+   - [Opção A — Execução nativa (`dotnet run`)](#opção-a--execução-nativa-dotnet-run)
+   - [Opção B — Execução com Docker](#opção-b--execução-com-docker)
+3. [Testes](#testes)
+4. [Guia da API com exemplos](#guia-da-api-com-exemplos)
+5. [Regras de validação](#regras-de-validação)
+6. [Formato dos erros](#formato-dos-erros)
+7. [Arquitetura e decisões](#arquitetura-e-decisões)
+8. [Estrutura do repositório](#estrutura-do-repositório)
+9. [Resolução de problemas](#resolução-de-problemas)
 
 ## Versões
 | Componente | Versão |
@@ -28,8 +29,59 @@ contra SQL Server real.
 | xUnit / Microsoft.AspNetCore.Mvc.Testing | 2.9.3 / 10.0.12 |
 | dotnet-ef (ferramenta) | 10.x |
 
-## Início rápido (Docker)
-Requer apenas Docker. Sobe o SQL Server e a API, aplica as migrações e insere dados de exemplo:
+## Como executar
+Há duas formas independentes de executar o projeto. **Escolha uma** (não precisa das duas):
+
+| | Opção A — Nativa | Opção B — Docker |
+|---|---|---|
+| Requisitos | .NET SDK 10 + um SQL Server | Apenas Docker |
+| Como arranca | `dotnet run` | `docker compose up` |
+| URL da API | `http://localhost:5290` | `http://localhost:8080` |
+| SQL Server | O seu (ou um contentor, passo 1) em `localhost:14333` | Criado pelo compose em `localhost:14334` |
+| Migrações e dados de exemplo | Automáticos em `Development` (ou `dotnet ef database update`) | Automáticos |
+| Recomendada para | Desenvolvimento, depuração e testes | Experimentar rapidamente sem instalar o .NET |
+
+> Os exemplos da secção [Guia da API](#guia-da-api-com-exemplos) usam `http://localhost:5290` (Opção A).
+> Se usou a Opção B, troque por `http://localhost:8080`.
+
+### Opção A — Execução nativa (`dotnet run`)
+**Requisitos:** .NET SDK 10 e um SQL Server acessível.
+
+**1. Ter um SQL Server.** Se já tem um, avance para o passo 2. Caso contrário, a forma mais simples é um contentor:
+```bash
+docker run -d --name sefic-sqlserver -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD='Your_password123' \
+  -p 14333:1433 mcr.microsoft.com/mssql/server:2022-latest
+```
+(SQL Server Developer/Express instalados na máquina também servem; ajuste a connection string.)
+
+**2. Configurar a connection string** em `appsettings.json` → `ConnectionStrings:Default`. Por defeito:
+```
+Server=localhost,14333;Database=SeficPartners;User Id=sa;Password=Your_password123;TrustServerCertificate=True
+```
+Pode ser sobreposta pela variável de ambiente `ConnectionStrings__Default`.
+
+**3. Executar:**
+```bash
+dotnet run                    # http://localhost:5290
+```
+Em `Development` (perfil por defeito de `dotnet run`) a API **aplica as migrações e insere 5 registos de exemplo**
+se o cadastro estiver vazio (`Seed:Enabled=true`). Não é preciso mais nada.
+
+**4. Experimentar:**
+```bash
+curl "http://localhost:5290/api/partners"
+```
+Também há pedidos prontos em [`sefic-api.http`](sefic-api.http) (VS Code com REST Client, Rider, Visual Studio).
+
+*Opcional — migrações manuais* (por exemplo, fora de `Development`):
+```bash
+dotnet tool install --global dotnet-ef   # uma só vez
+dotnet ef database update
+```
+
+### Opção B — Execução com Docker
+**Requisito:** apenas Docker. Sobe o SQL Server **e** a API, aplica as migrações e insere os dados de exemplo.
+Não precisa de ter o .NET nem de ter feito a Opção A.
 
 ```bash
 docker compose up -d --build
@@ -40,6 +92,8 @@ curl "http://localhost:8080/api/partners"
 |---|---|
 | API | `http://localhost:8080` |
 | SQL Server | `localhost:14334` (utilizador `sa`) |
+
+A porta do SQL Server do compose (14334) é diferente da da Opção A (14333) para os dois poderem coexistir.
 
 Comandos úteis:
 ```bash
@@ -53,34 +107,8 @@ política de passwords do SQL Server), `API_PORT` (8080), `SQL_PORT` (14334).
 Só a imagem da API: `docker build -t sefic-api .` e
 `docker run -p 8080:8080 -e ConnectionStrings__Default="<connection string>" sefic-api`.
 
-> Nos exemplos abaixo usa-se `http://localhost:5290` (execução local). Com Docker, troque por `http://localhost:8080`.
-
-## Execução local
-Requisitos: .NET SDK 10 e um SQL Server acessível.
-
-1. **SQL Server** (se ainda não tiver um):
-   ```bash
-   docker run -d --name sefic-sqlserver -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD='Your_password123' \
-     -p 14333:1433 mcr.microsoft.com/mssql/server:2022-latest
-   ```
-2. **Connection string** em `appsettings.json` → `ConnectionStrings:Default`
-   (por defeito `Server=localhost,14333;Database=SeficPartners;User Id=sa;Password=Your_password123;TrustServerCertificate=True`).
-   Pode ser sobreposta pela variável de ambiente `ConnectionStrings__Default`.
-3. **Migrações**:
-   ```bash
-   dotnet tool install --global dotnet-ef   # uma só vez
-   dotnet ef database update
-   ```
-4. **Executar**:
-   ```bash
-   dotnet run                               # http://localhost:5290
-   ```
-   Em `Development` (perfil por defeito de `dotnet run`) a API aplica as migrações e insere 5 registos de exemplo
-   se o cadastro estiver vazio (`Seed:Enabled=true`), pelo que o passo 3 é opcional.
-
-Pedidos prontos a executar estão em [`sefic-api.http`](sefic-api.http) (VS Code com REST Client, Rider, Visual Studio).
-
-Dados de exemplo inseridos:
+### Dados de exemplo
+Inseridos automaticamente nas duas opções quando o cadastro está vazio:
 
 | Name | TaxNumber | Type | CreditLimit |
 |---|---|---|---|
@@ -97,7 +125,7 @@ dotnet test tests/Sefic.Tests
 - São testes de integração contra **SQL Server real**: cada classe de testes cria uma base `SeficTests_<guid>`,
   aplica as migrações e apaga-a no fim. Não tocam na base de desenvolvimento.
 - Servidor por defeito: `localhost,14333` (`sa` / `Your_password123`). Para outro servidor, defina
-  `SEFIC_TEST_CONNECTION` **sem** `Database`:
+  `SEFIC_TEST_CONNECTION` **sem** `Database` (por exemplo, o SQL Server do compose da Opção B):
   ```bash
   SEFIC_TEST_CONNECTION="Server=localhost,14334;User Id=sa;Password=Your_password123;TrustServerCertificate=True" \
     dotnet test tests/Sefic.Tests
