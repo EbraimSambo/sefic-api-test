@@ -1,11 +1,46 @@
 # Sefic API — clientes e fornecedores
 
-API REST em ASP.NET Core para gerir clientes e fornecedores de uma única empresa. Uma entidade pode ser
-`CUSTOMER`, `SUPPLIER` ou `BOTH`, e existe no máximo um registo por NIF.
+## Sobre a aplicação
+Web API **REST** em **ASP.NET Core 10 (C#)** com **EF Core 10** e **SQL Server**, que expõe um cadastro único de
+clientes e fornecedores (uma entidade pode ser `CUSTOMER`, `SUPPLIER` ou `BOTH`) através de quatro endpoints:
+criar, obter por Id, listar com filtros/paginação e atualizar (incluindo desativar/reativar).
 
-Destaques: NIF único garantido pela base de dados (também sob pedidos concorrentes), concorrência otimista com
-`rowversion`, filtros e paginação executados no SQL Server, erros num formato único e testes de integração
-contra SQL Server real.
+**Stack:** controllers MVC · EF Core (code-first, migrações) · SQL Server 2022 · xUnit + `WebApplicationFactory`
+(testes de integração) · OpenAPI + Swagger UI · Docker / Docker Compose.
+
+### Arquitetura em resumo
+Organizada em camadas (Clean Architecture simplificada) dentro de um único projeto, com dependências sempre a
+apontar para o centro:
+
+```
+ Pedido HTTP
+     │
+     ▼
+ Api ─────────────► Application ─────────────► Domain
+ (Controller,        (PartnerService,           (Partner, PartnerType,
+  erros → HTTP)       validação, DTOs,           regras do NIF)
+                      IPartnerRepository)
+                           ▲
+                           │ implementa
+                    Infrastructure
+                    (EF Core, SQL Server, migrações, repositório, seed)
+```
+
+- **Api** — recebe o pedido, delega no serviço e converte exceções da aplicação em respostas HTTP uniformes.
+- **Application** — orquestra os casos de uso, valida e normaliza os dados e define a porta `IPartnerRepository`.
+- **Domain** — a entidade `Partner` e as regras puras (normalização do NIF), sem dependências de framework.
+- **Infrastructure** — implementa a persistência: mapeamento EF Core, repositório, migrações e dados de exemplo.
+
+### Mecanismos técnicos principais
+- **Unicidade do NIF** garantida por **índice único** na base de dados; a violação (erro 2601/2627 do SQL Server) é
+  traduzida em `409`. Funciona com pedidos concorrentes, sem locks em memória.
+- **Concorrência otimista** com coluna `rowversion`, exposta ao cliente como `version` em Base64 e comparada no
+  `WHERE` do `UPDATE` pelo próprio SQL Server.
+- **Consultas em SQL:** filtros, `COUNT`, ordenação e paginação são traduzidos de `IQueryable` para T-SQL.
+- **Erros uniformes** em `application/problem+json`, produzidos num único `IExceptionHandler`.
+- **Documentação interativa** com Swagger UI em `/swagger` (desligável com `Swagger:Enabled=false`).
+
+Os detalhes e as justificações das decisões estão em [Arquitetura e decisões](#arquitetura-e-decisões).
 
 ## Índice
 1. [Versões](#versões)
@@ -41,6 +76,8 @@ Há duas formas independentes de executar o projeto. **Escolha uma** (não preci
 | Migrações e dados de exemplo | Automáticos em `Development` (ou `dotnet ef database update`) | Automáticos |
 | Recomendada para | Desenvolvimento, depuração e testes | Experimentar rapidamente sem instalar o .NET |
 
+> Em ambas as opções, a **documentação interativa (Swagger UI)** está em `/swagger` e `/` redireciona para lá.
+>
 > Os exemplos da secção [Guia da API](#guia-da-api-com-exemplos) usam `http://localhost:5290` (Opção A).
 > Se usou a Opção B, troque por `http://localhost:8080`.
 
@@ -67,7 +104,7 @@ dotnet run                    # http://localhost:5290
 Em `Development` (perfil por defeito de `dotnet run`) a API **aplica as migrações e insere 5 registos de exemplo**
 se o cadastro estiver vazio (`Seed:Enabled=true`). Não é preciso mais nada.
 
-**4. Experimentar:**
+**4. Experimentar:** abra o Swagger UI em **http://localhost:5290/swagger** (ou use `curl`):
 ```bash
 curl "http://localhost:5290/api/partners"
 ```
@@ -85,12 +122,12 @@ Não precisa de ter o .NET nem de ter feito a Opção A.
 
 ```bash
 docker compose up -d --build
-curl "http://localhost:8080/api/partners"
+curl "http://localhost:8080/api/partners"     # ou abra http://localhost:8080/swagger
 ```
 
 | Serviço | Endereço |
 |---|---|
-| API | `http://localhost:8080` |
+| API (Swagger em `/swagger`) | `http://localhost:8080` |
 | SQL Server | `localhost:14334` (utilizador `sa`) |
 
 A porta do SQL Server do compose (14334) é diferente da da Opção A (14333) para os dois poderem coexistir.
@@ -136,6 +173,9 @@ dotnet test tests/Sefic.Tests
   desempate por Id; pesquisa que não faz corresponder todos os NIF; regras do NIF (unitários).
 
 ## Guia da API com exemplos
+> Prefere testar no browser? Abra o **Swagger UI** (`http://localhost:5290/swagger`): cada endpoint tem descrição, exemplos de
+> corpo e respostas possíveis, e o botão *Try it out* executa os pedidos. A especificação OpenAPI está em `/openapi/v1.json`.
+
 Todos os corpos são JSON (`Content-Type: application/json`). Os campos usam camelCase. Datas em UTC (ISO 8601 com `Z`).
 
 | Método | Rota | Descrição | Sucesso |
@@ -337,6 +377,7 @@ Dockerfile, docker-compose.yml, sefic-api.http, objective.md
 | `Login failed for user 'sa'` ou timeout ao ligar | SQL Server ainda a arrancar (aguarde ~20 s) ou password/porta diferentes; confirme a connection string |
 | Password rejeitada pelo SQL Server | Tem de cumprir a política (8+ caracteres, maiúsculas, minúsculas, números/símbolos) |
 | `Cannot open database "SeficPartners"` | Execute `dotnet ef database update` ou arranque em `Development` |
+| Swagger não abre | Confirme que `Swagger:Enabled` não está a `false`; o endereço é `/swagger` |
 | Porta em uso | Altere `API_PORT`/`SQL_PORT` (Docker) ou `applicationUrl` em `Properties/launchSettings.json` |
 | `dotnet ef` não encontrado | `dotnet tool install --global dotnet-ef` |
 | Testes falham a ligar | Defina `SEFIC_TEST_CONNECTION` (sem `Database`) para um SQL Server acessível |
