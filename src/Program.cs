@@ -19,6 +19,14 @@ builder.Services.AddControllers()
                 "O pedido contém valores malformados.", errors))
             { StatusCode = 400, ContentTypes = { "application/problem+json" } };
         });
+builder.Services.AddOpenApi(o => o.AddDocumentTransformer((doc, _, _) =>
+{
+    doc.Info.Title = "Sefic API — clientes e fornecedores";
+    doc.Info.Version = "v1";
+    doc.Info.Description = "Gestão de clientes e fornecedores com NIF único e concorrência otimista (campo `version`). " +
+        "Erros em `application/problem+json`. Para atualizar, leia primeiro a entidade e envie a `version` recebida.";
+    return Task.CompletedTask;
+}));
 builder.Services.AddExceptionHandler<ApiExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddSingleton(TimeProvider.System);
@@ -36,6 +44,19 @@ if (app.Configuration.GetValue<bool>("Seed:Enabled"))
     var db = scope.ServiceProvider.GetRequiredService<SeficDbContext>();
     await db.Database.MigrateAsync();
     await DataSeeder.SeedAsync(db, scope.ServiceProvider.GetRequiredService<TimeProvider>());
+}
+
+// Swagger UI em /swagger (desligável com Swagger:Enabled=false).
+if (app.Configuration.GetValue("Swagger:Enabled", true))
+{
+    app.MapOpenApi();
+    app.UseSwaggerUI(o =>
+    {
+        o.SwaggerEndpoint("/openapi/v1.json", "Sefic API v1");
+        o.RoutePrefix = "swagger";
+        o.DocumentTitle = "Sefic API";
+    });
+    app.MapGet("/", () => Results.Redirect("/swagger")).ExcludeFromDescription();
 }
 
 app.MapControllers();
