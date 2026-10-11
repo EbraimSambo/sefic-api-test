@@ -7,7 +7,6 @@
     <NoWarn>$(NoWarn);1591;1573</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <!-- O projeto de testes é independente e não faz parte desta compilação. -->
     <Compile Remove="tests/**" />
     <EmbeddedResource Remove="tests/**" />
     <None Remove="tests/**" />

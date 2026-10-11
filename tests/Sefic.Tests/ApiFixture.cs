@@ -41,7 +41,6 @@ public class ApiFixture : WebApplicationFactory<Program>, IAsyncLifetime
         await base.DisposeAsync();
     }
 
-    /// <summary>NIF válido e único dentro desta base de dados.</summary>
     public string NewTax() => Interlocked.Increment(ref _taxCounter).ToString("D9");
 
     public Task<HttpResponseMessage> PostAsync(object body) =>

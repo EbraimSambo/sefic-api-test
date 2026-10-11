@@ -5,7 +5,6 @@ namespace Sefic.Infrastructure.Persistence;
 
 public static class DataSeeder
 {
-    /// <summary>Insere dados de exemplo apenas se o cadastro estiver vazio.</summary>
     public static async Task SeedAsync(SeficDbContext db, TimeProvider clock, CancellationToken ct = default)
     {
         if (await db.Partners.AnyAsync(ct)) return;

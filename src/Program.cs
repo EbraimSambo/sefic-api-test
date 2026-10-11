@@ -46,7 +46,6 @@ if (app.Configuration.GetValue<bool>("Seed:Enabled"))
     await DataSeeder.SeedAsync(db, scope.ServiceProvider.GetRequiredService<TimeProvider>());
 }
 
-// Swagger UI em /swagger (desligável com Swagger:Enabled=false).
 if (app.Configuration.GetValue("Swagger:Enabled", true))
 {
     app.MapOpenApi();

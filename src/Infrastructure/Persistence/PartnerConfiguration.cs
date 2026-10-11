@@ -16,7 +16,7 @@ public class PartnerConfiguration : IEntityTypeConfiguration<Partner>
         b.HasKey(p => p.Id);
         b.Property(p => p.Id).ValueGeneratedNever();
 
-        // Colação explícita: procura por nome sem distinguir maiúsculas de minúsculas.
+        // Colação explícita para a procura por nome ser insensível a maiúsculas.
         b.Property(p => p.Name).HasMaxLength(Partner.NameMaxLength).IsRequired()
             .UseCollation("Latin1_General_100_CI_AS");
         b.Property(p => p.TaxNumber).HasMaxLength(TaxNumberRules.Length).IsUnicode(false).IsFixedLength().IsRequired();
